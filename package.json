@@ -1,0 +1,40 @@
+{
+  "name": "nodejs-rsi-monitor",
+  "version": "1.0.0",
+  "description": "Monitors an API endpoint, calculates RSI, and sends email alerts.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.11",
+    "technicalindicators": "^3.1.0",
+    "moment-timezone": "^0.5.45"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.0",
+    "technicalindicators": "^3.1.0",
+    "moment-timezone": "^0.5.45",
+    "nodemailer": "^6.9.11",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3"
+  },
+  "keywords": [
+    "nodejs",
+    "rsi",
+    "monitor",
+    "email",
+    "technicalindicators"
+  ],
+  "author": "",
+  "license": "ISC"
+}
