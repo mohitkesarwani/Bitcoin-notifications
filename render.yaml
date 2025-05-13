@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: bitcoin-notifications-api
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    branch: main
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_ADDRESS
+        sync: false
+      - key: API_ENDPOINT
+        sync: false
+      - key: EMAIL_ENABLED
+        sync: false
