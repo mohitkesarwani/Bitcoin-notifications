@@ -50,7 +50,7 @@ The API also exposes `/api/btc-indicators` which returns multiple Bitcoin indica
 curl http://localhost:3000/api/btc-indicators
 ```
 
-The response contains the indicator data returned by Twelve Data:
+The response contains multiple indicators along with the configured strategy thresholds:
 
 ```json
 {
@@ -58,7 +58,14 @@ The response contains the indicator data returned by Twelve Data:
   "macd": {"values": [...]},
   "ema20": {"values": [...]},
   "sma50": {"values": [...]},
-  "bbands": {"values": [...]}
+  "bbands": {"values": [...]},
+  "stochastic": {"values": [...]},
+  "adx": {"values": [...]},
+  "cci": {"values": [...]},
+  "config": {
+    "buyRules": { ... },
+    "sellRules": { ... }
+  }
 }
 ```
 
