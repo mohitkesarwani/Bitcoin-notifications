@@ -63,3 +63,17 @@ The response contains the indicator data returned by Twelve Data:
 ```
 
 If one or more indicators fail to load, the response will still include the available indicators and an `errors` array describing which ones failed.
+
+## Deploying to Render
+
+This repository includes a `render.yaml` file so the API can be easily deployed
+to [Render](https://render.com). To deploy:
+
+1. Push your fork of this repository to a GitHub account.
+2. Create a new **Web Service** on Render and point it at your repository.
+3. When prompted, Render will detect `render.yaml` and automatically configure
+   the service. Provide your `TWELVE_DATA_API_KEY` in the service's environment
+   settings.
+
+Render will then build and start the server using the commands defined in
+`render.yaml`.
