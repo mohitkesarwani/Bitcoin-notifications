@@ -25,7 +25,7 @@ npm start
 
 The server listens on `http://localhost:3000` by default.
 
-## Testing the endpoint
+## Testing the price and RSI endpoint
 
 Use `curl` or any HTTP client to fetch Bitcoin data:
 
@@ -41,3 +41,25 @@ The response will be a JSON object:
   "rsi": "70.5"
 }
 ```
+
+## Fetching technical indicators
+
+The API also exposes `/api/btc-indicators` which returns multiple Bitcoin indicators in a single request. Example usage:
+
+```bash
+curl http://localhost:3000/api/btc-indicators
+```
+
+The response contains the indicator data returned by Twelve Data:
+
+```json
+{
+  "rsi": {"values": [...]},
+  "macd": {"values": [...]},
+  "ema20": {"values": [...]},
+  "sma50": {"values": [...]},
+  "bbands": {"values": [...]}
+}
+```
+
+If one or more indicators fail to load, the response will still include the available indicators and an `errors` array describing which ones failed.
