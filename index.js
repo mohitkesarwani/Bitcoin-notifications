@@ -4,6 +4,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const parseNumber = (value) => {
+  const num = parseFloat(value);
+  return Number.isNaN(num) ? null : num;
+};
+
+const parseBool = (value) => String(value).toLowerCase() === 'true';
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -53,7 +60,10 @@ app.get('/api/btc-indicators', async (req, res) => {
     macd: 'https://api.twelvedata.com/macd?symbol=BTC/USD&interval=1h&series_type=close',
     ema20: 'https://api.twelvedata.com/ema?symbol=BTC/USD&interval=1h&time_period=20&series_type=close',
     sma50: 'https://api.twelvedata.com/sma?symbol=BTC/USD&interval=1h&time_period=50&series_type=close',
-    bbands: 'https://api.twelvedata.com/bbands?symbol=BTC/USD&interval=1h&time_period=20&series_type=close&sd=2'
+    bbands: 'https://api.twelvedata.com/bbands?symbol=BTC/USD&interval=1h&time_period=20&series_type=close&sd=2',
+    stochastic: 'https://api.twelvedata.com/stoch?symbol=BTC/USD&interval=1h',
+    adx: 'https://api.twelvedata.com/adx?symbol=BTC/USD&interval=1h&time_period=14',
+    cci: 'https://api.twelvedata.com/cci?symbol=BTC/USD&interval=1h&time_period=20&series_type=close'
   };
 
   try {
@@ -80,6 +90,39 @@ app.get('/api/btc-indicators', async (req, res) => {
     if (errors.length) {
       responseData.errors = errors;
     }
+
+    const config = {
+      buyRules: {
+        useRsi: parseBool(process.env.USE_RSI),
+        rsiOversold: parseNumber(process.env.RSI_OVERSOLD),
+        useMacd: parseBool(process.env.USE_MACD),
+        macdSignal: parseNumber(process.env.MACD_SIGNAL),
+        useBbands: parseBool(process.env.USE_BBANDS),
+        bbandsLower: parseNumber(process.env.BBANDS_LOWER),
+        useCci: parseBool(process.env.USE_CCI),
+        cciThreshold: parseNumber(process.env.CCI_THRESHOLD),
+        useAdx: parseBool(process.env.USE_ADX),
+        adxThreshold: parseNumber(process.env.ADX_THRESHOLD),
+        useStoch: parseBool(process.env.USE_STOCH),
+        stochOversold: parseNumber(process.env.STOCH_OVERSOLD)
+      },
+      sellRules: {
+        useRsi: parseBool(process.env.USE_RSI),
+        rsiOverbought: parseNumber(process.env.RSI_OVERBOUGHT),
+        useMacd: parseBool(process.env.USE_MACD),
+        macdSignal: parseNumber(process.env.MACD_SIGNAL),
+        useBbands: parseBool(process.env.USE_BBANDS),
+        bbandsUpper: parseNumber(process.env.BBANDS_UPPER),
+        useCci: parseBool(process.env.USE_CCI),
+        cciThreshold: parseNumber(process.env.CCI_THRESHOLD),
+        useAdx: parseBool(process.env.USE_ADX),
+        adxThreshold: parseNumber(process.env.ADX_THRESHOLD),
+        useStoch: parseBool(process.env.USE_STOCH),
+        stochOverbought: parseNumber(process.env.STOCH_OVERBOUGHT)
+      }
+    };
+
+    responseData.config = config;
 
     return res.json(responseData);
   } catch (error) {
