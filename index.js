@@ -7,16 +7,18 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-const { TWELVE_DATA_API_KEY } = process.env;
 
 app.get('/api/btc-data', async (req, res) => {
-  if (!TWELVE_DATA_API_KEY) {
-    return res.status(500).json({ error: 'TWELVE_DATA_API_KEY is not configured' });
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    return res
+      .status(500)
+      .json({ error: 'TWELVE_DATA_API_KEY is not configured' });
   }
 
   try {
-    const priceUrl = `https://api.twelvedata.com/price?symbol=BTC/USD&apikey=${TWELVE_DATA_API_KEY}`;
-    const rsiUrl = `https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close&apikey=${TWELVE_DATA_API_KEY}`;
+    const priceUrl = `https://api.twelvedata.com/price?symbol=BTC/USD&apikey=${apiKey}`;
+    const rsiUrl = `https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close&apikey=${apiKey}`;
 
     const [priceRes, rsiRes] = await Promise.all([
       axios.get(priceUrl),
@@ -39,8 +41,11 @@ app.get('/api/btc-data', async (req, res) => {
 });
 
 app.get('/api/btc-indicators', async (req, res) => {
-  if (!TWELVE_DATA_API_KEY) {
-    return res.status(500).json({ error: 'TWELVE_DATA_API_KEY is not configured' });
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    return res
+      .status(500)
+      .json({ error: 'TWELVE_DATA_API_KEY is not configured' });
   }
 
   const endpoints = {
@@ -54,7 +59,7 @@ app.get('/api/btc-indicators', async (req, res) => {
   try {
     const requests = Object.entries(endpoints).map(([key, baseUrl]) =>
       axios
-        .get(`${baseUrl}&apikey=${TWELVE_DATA_API_KEY}`)
+        .get(`${baseUrl}&apikey=${apiKey}`)
         .then((response) => ({ key, data: response.data }))
         .catch((error) => ({ key, error: error.message }))
     );
