@@ -99,7 +99,7 @@ Railway or Render.
 ## Background Cron Job
 
 If `ENABLE_CRON=true` is set in the environment, the server will run a
-background task every 15 minutes. This task fetches `/api/btc-indicators`,
+background task every 12 hours. This task fetches `/api/btc-indicators`,
 evaluates the trading signal and logs the result. When email credentials are
 configured and `ENABLE_NOTIFICATIONS=true`, alert emails are sent on BUY or
 SELL signals.
