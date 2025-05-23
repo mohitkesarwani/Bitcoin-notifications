@@ -1,14 +1,24 @@
 import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
+import {
+  RSI,
+  MACD,
+  EMA,
+  SMA,
+  BollingerBands,
+  ADX,
+  CCI,
+  Stochastic
+} from 'technicalindicators';
 import { run as evaluateSignalJob } from './cron/evaluateAndLog.js';
 
-// Simple in-memory cache to avoid excessive Twelve Data requests
+// Simple in-memory cache to avoid excessive API requests
 const cache = {};
 
 /**
  * Fetch data from a URL with caching.
- * @param {string} url - The Twelve Data endpoint including query params.
+ * @param {string} url - The API endpoint including query params.
  * @param {string} key - Unique cache key for the request.
  * @returns {Promise<any>} The fetched or cached data.
  */
@@ -23,7 +33,7 @@ async function fetchWithCache(url, key, context = '') {
   }
   try {
     const prefix = context ? `[${context}] ` : '';
-    console.log(`[API]${prefix}fetching ${key} from Twelve Data`);
+    console.log(`[API]${prefix}fetching ${key} from CryptoCompare`);
     const response = await axios.get(url);
     cache[key] = { data: response.data, timestamp: now };
     return response.data;
@@ -51,35 +61,90 @@ const assetNames = {
   'ADA/USD': 'Cardano'
 };
 
+function getSymbolPair(asset) {
+  const [fsym, tsym] = asset.split('/');
+  return { fsym, tsym };
+}
+
+async function fetchOhlcv(fsym, tsym) {
+  const apiKey = process.env.CRYPTOCOMPARE_API_KEY;
+  if (!apiKey) {
+    throw new Error('CRYPTOCOMPARE_API_KEY is not configured');
+  }
+  const url = `https://min-api.cryptocompare.com/data/v2/histohour?fsym=${fsym}&tsym=${tsym}&limit=50&api_key=${apiKey}`;
+  const data = await fetchWithCache(url, `${fsym}${tsym}-ohlc`, `${fsym}/${tsym}`);
+  if (!data || !data.Data || !Array.isArray(data.Data.Data)) {
+    throw new Error('Invalid data from CryptoCompare');
+  }
+  return data.Data.Data;
+}
+
+function calculateIndicators(candles) {
+  const closes = candles.map((c) => c.close);
+  const highs = candles.map((c) => c.high);
+  const lows = candles.map((c) => c.low);
+
+  const rsiArr = RSI.calculate({ values: closes, period: 14 });
+  const macdArr = MACD.calculate({
+    values: closes,
+    fastPeriod: 12,
+    slowPeriod: 26,
+    signalPeriod: 9,
+    SimpleMAOscillator: false,
+    SimpleMASignal: false
+  });
+  const ema20Arr = EMA.calculate({ period: 20, values: closes });
+  const sma50Arr = SMA.calculate({ period: 50, values: closes });
+  const bbArr = BollingerBands.calculate({ period: 20, values: closes, stdDev: 2 });
+  const adxArr = ADX.calculate({ close: closes, high: highs, low: lows, period: 14 });
+  const cciArr = CCI.calculate({ high: highs, low: lows, close: closes, period: 20 });
+  const stochArr = Stochastic.calculate({ high: highs, low: lows, close: closes, period: 14, signalPeriod: 3 });
+
+  const price = closes[closes.length - 1];
+
+  return {
+    rsi: { values: [{ rsi: rsiArr[rsiArr.length - 1] }] },
+    macd: {
+      values: [
+        {
+          macd: macdArr[macdArr.length - 1]?.MACD,
+          macd_signal: macdArr[macdArr.length - 1]?.signal
+        }
+      ]
+    },
+    ema20: { values: [{ ema: ema20Arr[ema20Arr.length - 1] }] },
+    sma50: { values: [{ sma: sma50Arr[sma50Arr.length - 1] }] },
+    bbands: {
+      values: [
+        {
+          real: price,
+          lower_band: bbArr[bbArr.length - 1]?.lower,
+          upper_band: bbArr[bbArr.length - 1]?.upper
+        }
+      ]
+    },
+    stochastic: {
+      values: [
+        { slow_k: stochArr[stochArr.length - 1]?.k, slow_d: stochArr[stochArr.length - 1]?.d }
+      ]
+    },
+    adx: { values: [{ adx: adxArr[adxArr.length - 1]?.adx }] },
+    cci: { values: [{ cci: cciArr[cciArr.length - 1] }] }
+  };
+}
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 
 app.get('/api/btc-data', async (req, res) => {
-  const apiKey = process.env.TWELVE_DATA_API_KEY;
-  if (!apiKey) {
-    return res
-      .status(500)
-      .json({ error: 'TWELVE_DATA_API_KEY is not configured' });
-  }
-
   try {
-    const priceUrl = `https://api.twelvedata.com/price?symbol=BTC/USD&apikey=${apiKey}`;
-    const rsiUrl = `https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close&apikey=${apiKey}`;
-
-    const asset = assetNames['BTC/USD'] || 'BTC/USD';
-    const [priceRes, rsiRes] = await Promise.all([
-      fetchWithCache(priceUrl, 'price', asset),
-      fetchWithCache(rsiUrl, 'rsi', asset)
-    ]);
-
-    const price = priceRes.price || null;
-    let rsi = null;
-    if (Array.isArray(rsiRes.values) && rsiRes.values.length > 0) {
-      rsi = rsiRes.values[0].rsi;
-    } else if (typeof rsiRes.rsi !== 'undefined') {
-      rsi = rsiRes.rsi;
-    }
+    const { fsym, tsym } = getSymbolPair('BTC/USD');
+    const candles = await fetchOhlcv(fsym, tsym);
+    const closes = candles.map((c) => c.close);
+    const price = closes[closes.length - 1];
+    const rsiArr = RSI.calculate({ values: closes, period: 14 });
+    const rsi = rsiArr[rsiArr.length - 1];
 
     return res.json({ price, rsi });
   } catch (error) {
@@ -89,50 +154,14 @@ app.get('/api/btc-data', async (req, res) => {
 });
 
 app.get('/api/btc-indicators', async (req, res) => {
-  const apiKey = process.env.TWELVE_DATA_API_KEY;
-  if (!apiKey) {
-    return res
-      .status(500)
-      .json({ error: 'TWELVE_DATA_API_KEY is not configured' });
-  }
-
   const symbol = req.query.symbol || 'BTC/USD';
 
-  const endpoints = {
-    rsi: `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1h&time_period=14&series_type=close`,
-    macd: `https://api.twelvedata.com/macd?symbol=${symbol}&interval=1h&series_type=close`,
-    ema20: `https://api.twelvedata.com/ema?symbol=${symbol}&interval=1h&time_period=20&series_type=close`,
-    sma50: `https://api.twelvedata.com/sma?symbol=${symbol}&interval=1h&time_period=50&series_type=close`,
-    bbands: `https://api.twelvedata.com/bbands?symbol=${symbol}&interval=1h&time_period=20&series_type=close&sd=2`,
-    stochastic: `https://api.twelvedata.com/stoch?symbol=${symbol}&interval=1h`,
-    adx: `https://api.twelvedata.com/adx?symbol=${symbol}&interval=1h&time_period=14`,
-    cci: `https://api.twelvedata.com/cci?symbol=${symbol}&interval=1h&time_period=20&series_type=close`
-  };
-
   try {
-    const asset = assetNames[symbol] || symbol;
-    const requests = Object.entries(endpoints).map(([key, baseUrl]) =>
-      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, `${symbol}-${key}`, asset)
-        .then((data) => ({ key, data }))
-        .catch((error) => ({ key, error: error.message }))
-    );
+    const { fsym, tsym } = getSymbolPair(symbol);
+    const candles = await fetchOhlcv(fsym, tsym);
+    const indicators = calculateIndicators(candles);
 
-    const results = await Promise.all(requests);
-
-    const responseData = {};
-    const errors = [];
-
-    results.forEach((result) => {
-      if (result.data) {
-        responseData[result.key] = result.data;
-      } else {
-        errors.push({ indicator: result.key, error: result.error });
-      }
-    });
-
-    if (errors.length) {
-      responseData.errors = errors;
-    }
+    const responseData = { ...indicators };
 
     const config = {
       buyRules: {

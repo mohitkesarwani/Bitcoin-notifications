@@ -1,6 +1,6 @@
 # Bitcoin Notification API
 
-This project provides a simple Express server that fetches current Bitcoin data from the Twelve Data API.
+This project provides a simple Express server that fetches current Bitcoin data from the CryptoCompare API.
 
 ## Setup
 
@@ -10,7 +10,7 @@ This project provides a simple Express server that fetches current Bitcoin data 
 npm install
 ```
 
-2. Create a `.env` file based on `.env.example` and set your `TWELVE_DATA_API_KEY`:
+2. Create a `.env` file based on `.env.example` and set your `CRYPTOCOMPARE_API_KEY`:
 
 ```bash
 cp .env.example .env
@@ -19,7 +19,7 @@ cp .env.example .env
 
 The `.env` file also allows configuration of `CACHE_TTL_MINUTES` which
 controls how long API responses are cached. Increasing this value reduces
-the number of requests made to Twelve Data.
+the number of requests made to CryptoCompare.
 
 3. Start the server:
 
@@ -73,7 +73,7 @@ The response contains multiple indicators along with the configured strategy thr
 }
 ```
 
-If one or more indicators fail to load, the response will still include the available indicators and an `errors` array describing which ones failed.
+All indicators are calculated locally from the OHLCV data returned by CryptoCompare.
 
 ## Deploying to Render
 
@@ -83,7 +83,7 @@ to [Render](https://render.com). To deploy:
 1. Push your fork of this repository to a GitHub account.
 2. Create a new **Web Service** on Render and point it at your repository.
 3. When prompted, Render will detect `render.yaml` and automatically configure
-   the service. Provide your `TWELVE_DATA_API_KEY` in the service's environment
+   the service. Provide your `CRYPTOCOMPARE_API_KEY` in the service's environment
    settings.
 
 Render will then build and start the server using the commands defined in
@@ -91,7 +91,7 @@ Render will then build and start the server using the commands defined in
 
 ## Logging
 
-Each API request to Twelve Data is logged to the console. Successful requests
+Each API request to CryptoCompare is logged to the console. Successful requests
 are prefixed with `[API]` and cache hits with `[CACHE]`. Errors are logged with
 `[API]` followed by the error message so they can be viewed in platforms like
 Railway or Render.
@@ -99,7 +99,7 @@ Railway or Render.
 ## Background Cron Job
 
 If `ENABLE_CRON=true` is set in the environment, the server will run a
-background task every 12 hours. This task fetches `/api/btc-indicators`,
-evaluates the trading signal and logs the result. When email credentials are
-configured and `ENABLE_NOTIFICATIONS=true`, alert emails are sent on BUY or
-SELL signals.
+background task every 12 hours. This task pulls recent market data from
+CryptoCompare, evaluates the trading signal and logs the result. When email
+credentials are configured and `ENABLE_NOTIFICATIONS=true`, alert emails are
+sent on BUY or SELL signals.
