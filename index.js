@@ -35,11 +35,12 @@ async function fetchWithCache(url, key, context = '') {
     const prefix = context ? `[${context}] ` : '';
     console.log(`[API]${prefix}fetching ${key} from CryptoCompare`);
     const response = await axios.get(url);
+    console.log(`[API]${prefix}successfully fetched ${key}`);
     cache[key] = { data: response.data, timestamp: now };
     return response.data;
   } catch (err) {
     const prefix = context ? `[${context}] ` : '';
-    console.error(`[API]${prefix}failed to fetch ${key}`, err.message);
+    console.error(`[API]${prefix}failed to fetch ${key}: ${err.message}`);
     throw err;
   }
 }
@@ -229,7 +230,7 @@ if (process.env.ENABLE_CRON === 'true') {
     });
   };
   runJob();
-  cronInterval = setInterval(runJob, 12 * 60 * 60 * 1000);
+  cronInterval = setInterval(runJob, 30 * 60 * 1000);
 
   aliveInterval = setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);

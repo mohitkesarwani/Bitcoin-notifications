@@ -91,15 +91,15 @@ Render will then build and start the server using the commands defined in
 
 ## Logging
 
-Each API request to CryptoCompare is logged to the console. Successful requests
-are prefixed with `[API]` and cache hits with `[CACHE]`. Errors are logged with
-`[API]` followed by the error message so they can be viewed in platforms like
-Railway or Render.
+Each API request to CryptoCompare is logged to the console. All requests are
+prefixed with `[API]` while cache hits use `[CACHE]`. Both successful and failed
+requests are recorded so they can be viewed in platforms like Railway or
+Render. Failures include the reason in the log message.
 
 ## Background Cron Job
 
 If `ENABLE_CRON=true` is set in the environment, the server will run a
-background task every 12 hours. This task pulls recent market data from
+background task every 30 minutes. This task pulls recent market data from
 CryptoCompare, evaluates the trading signal and logs the result. When email
 credentials are configured and `ENABLE_NOTIFICATIONS=true`, alert emails are
 sent on BUY or SELL signals.

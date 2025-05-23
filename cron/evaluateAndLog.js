@@ -26,11 +26,18 @@ async function fetchOhlcv(fsym, tsym) {
     throw new Error('CRYPTOCOMPARE_API_KEY is not configured');
   }
   const url = `https://min-api.cryptocompare.com/data/v2/histohour?fsym=${fsym}&tsym=${tsym}&limit=50&api_key=${apiKey}`;
-  const res = await axios.get(url);
-  if (!res.data || !res.data.Data || !Array.isArray(res.data.Data.Data)) {
-    throw new Error('Invalid data from CryptoCompare');
+  try {
+    console.log(`[API] requesting OHLCV for ${fsym}/${tsym}`);
+    const res = await axios.get(url);
+    console.log(`[API] successfully fetched OHLCV for ${fsym}/${tsym}`);
+    if (!res.data || !res.data.Data || !Array.isArray(res.data.Data.Data)) {
+      throw new Error('Invalid data from CryptoCompare');
+    }
+    return res.data.Data.Data;
+  } catch (err) {
+    console.error(`[API] failed to fetch OHLCV for ${fsym}/${tsym}: ${err.message}`);
+    throw err;
   }
-  return res.data.Data.Data;
 }
 
 function calculateIndicators(candles) {
