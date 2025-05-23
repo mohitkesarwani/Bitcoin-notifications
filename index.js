@@ -199,9 +199,27 @@ app.get('/api/btc-indicators', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+let cronInterval;
+let aliveInterval;
+
+function shutdown() {
+  console.log('[SHUTDOWN] Received termination signal, closing server');
+  clearInterval(aliveInterval);
+  clearInterval(cronInterval);
+  server.close(() => {
+    console.log('[SHUTDOWN] Server closed');
+    process.exit(0);
+  });
+  // Fallback exit if close never happens
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 if (process.env.ENABLE_CRON === 'true') {
   console.log('[INIT] Cron job enabled. Starting evaluation loop...');
@@ -211,9 +229,9 @@ if (process.env.ENABLE_CRON === 'true') {
     });
   };
   runJob();
-  setInterval(runJob, 12 * 60 * 60 * 1000);
+  cronInterval = setInterval(runJob, 12 * 60 * 60 * 1000);
 
-  setInterval(() => {
+  aliveInterval = setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
   }, 60 * 1000);
 }
