@@ -1,5 +1,6 @@
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+dotenv.config();
 
 function createTransporter() {
   if (!process.env.SENDGRID_API_KEY) {
@@ -43,4 +44,4 @@ async function sendEmail(subject, text) {
   }
 }
 
-module.exports = { sendEmail };
+export { sendEmail };

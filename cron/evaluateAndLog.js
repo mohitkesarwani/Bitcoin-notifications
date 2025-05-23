@@ -1,7 +1,8 @@
-const { evaluateSignal } = require("../signalEvaluator");
-const axios = require("axios");
-const { sendEmail } = require("../notifier");
-require("dotenv").config();
+import { evaluateSignal } from "../signalEvaluator.js";
+import axios from "axios";
+import { sendEmail } from "../notifier.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 async function run() {
   try {

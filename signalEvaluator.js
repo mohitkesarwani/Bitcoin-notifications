@@ -139,4 +139,4 @@ function evaluateSignal(data) {
   return result;
 }
 
-module.exports = { evaluateSignal };
+export { evaluateSignal };
