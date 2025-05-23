@@ -33,13 +33,14 @@ async function sendEmail(subject, text) {
   const fullSubject = prefix ? `${prefix} ${subject}` : subject;
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: emailFrom,
       to: emailTo,
       subject: fullSubject,
       text
     });
-    console.log(`[NOTIFY] Email sent: ${fullSubject}`);
+    const response = info?.response || info?.messageId || 'OK';
+    console.log(`[NOTIFY] Email sent: ${fullSubject} (${response})`);
   } catch (err) {
     console.warn('[NOTIFY] Failed to send email', err.message);
   }
