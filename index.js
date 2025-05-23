@@ -93,38 +93,34 @@ app.get('/api/btc-indicators', async (req, res) => {
 
     const config = {
       buyRules: {
-        useRsi: parseBool(process.env.USE_RSI),
-        rsiOversold: parseNumber(process.env.RSI_OVERSOLD),
-        useMacd: parseBool(process.env.USE_MACD),
-        macdSignal: parseNumber(process.env.MACD_SIGNAL),
-        useBbands: parseBool(process.env.USE_BBANDS),
-        bbandsLower: parseNumber(process.env.BBANDS_LOWER),
-        useCci: parseBool(process.env.USE_CCI),
-        cciThreshold: parseNumber(process.env.CCI_THRESHOLD),
-        useAdx: parseBool(process.env.USE_ADX),
-        adxThreshold: parseNumber(process.env.ADX_THRESHOLD),
-        useStoch: parseBool(process.env.USE_STOCH),
-        stochOversold: parseNumber(process.env.STOCH_OVERSOLD)
+        useRsi: process.env.RSI_BUY_THRESHOLD !== undefined,
+        rsiOversold: parseFloat(process.env.RSI_BUY_THRESHOLD) || null,
+        useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
+        useBbands: process.env.BBAND_USE_LOWER === 'true',
+        bbandsLower: true,
+        useCci: process.env.CCI_BUY_THRESHOLD !== undefined,
+        cciThreshold: parseFloat(process.env.CCI_BUY_THRESHOLD) || null,
+        useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
+        adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
+        useStoch: process.env.STOCH_BUY_THRESHOLD !== undefined,
+        stochOversold: parseFloat(process.env.STOCH_BUY_THRESHOLD) || null
       },
       sellRules: {
-        useRsi: parseBool(process.env.USE_RSI),
-        rsiOverbought: parseNumber(process.env.RSI_OVERBOUGHT),
-        useMacd: parseBool(process.env.USE_MACD),
-        macdSignal: parseNumber(process.env.MACD_SIGNAL),
-        useBbands: parseBool(process.env.USE_BBANDS),
-        bbandsUpper: parseNumber(process.env.BBANDS_UPPER),
-        useCci: parseBool(process.env.USE_CCI),
-        cciThreshold: parseNumber(process.env.CCI_THRESHOLD),
-        useAdx: parseBool(process.env.USE_ADX),
-        adxThreshold: parseNumber(process.env.ADX_THRESHOLD),
-        useStoch: parseBool(process.env.USE_STOCH),
-        stochOverbought: parseNumber(process.env.STOCH_OVERBOUGHT)
+        useRsi: process.env.RSI_SELL_THRESHOLD !== undefined,
+        rsiOverbought: parseFloat(process.env.RSI_SELL_THRESHOLD) || null,
+        useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
+        useBbands: process.env.BBAND_USE_UPPER === 'true',
+        bbandsUpper: true,
+        useCci: process.env.CCI_SELL_THRESHOLD !== undefined,
+        cciThreshold: parseFloat(process.env.CCI_SELL_THRESHOLD) || null,
+        useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
+        adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
+        useStoch: process.env.STOCH_SELL_THRESHOLD !== undefined,
+        stochOverbought: parseFloat(process.env.STOCH_SELL_THRESHOLD) || null
       }
     };
 
-    responseData.config = config;
-
-    return res.json(responseData);
+    return res.json({ ...responseData, config });
   } catch (error) {
     console.error('Error fetching BTC indicators', error.message);
     return res.status(500).json({ error: 'Failed to fetch BTC indicators' });
