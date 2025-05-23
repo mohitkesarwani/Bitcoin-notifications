@@ -39,6 +39,7 @@ async function sendEmail(subject, text) {
       subject: fullSubject,
       text
     });
+    console.log(`[NOTIFY] Email sent: ${fullSubject}`);
   } catch (err) {
     console.warn('[NOTIFY] Failed to send email', err.message);
   }
