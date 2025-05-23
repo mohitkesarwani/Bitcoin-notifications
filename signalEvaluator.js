@@ -135,6 +135,9 @@ function evaluateSignal(data) {
     result.signal = 'HOLD';
     result.reason = [...buyReasons, ...sellReasons, 'Conflicting signals'];
   }
+  if (result.reason.length === 0) {
+    result.reason.push('No trigger conditions met');
+  }
 
   return result;
 }

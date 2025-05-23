@@ -73,19 +73,73 @@ async function run() {
       const { fsym, tsym } = getSymbolPair(asset.symbol);
       const candles = await fetchOhlcv(fsym, tsym);
       const indicators = calculateIndicators(candles);
-      const result = evaluateSignal(indicators);
+
+      const config = {
+        buyRules: {
+          useRsi: process.env.RSI_BUY_THRESHOLD !== undefined,
+          rsiOversold: parseFloat(process.env.RSI_BUY_THRESHOLD) || null,
+          useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
+          useBbands: process.env.BBAND_USE_LOWER === 'true',
+          bbandsLower: true,
+          useCci: process.env.CCI_BUY_THRESHOLD !== undefined,
+          cciThreshold: parseFloat(process.env.CCI_BUY_THRESHOLD) || null,
+          useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
+          adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
+          useStoch: process.env.STOCH_BUY_THRESHOLD !== undefined,
+          stochOversold: parseFloat(process.env.STOCH_BUY_THRESHOLD) || null
+        },
+        sellRules: {
+          useRsi: process.env.RSI_SELL_THRESHOLD !== undefined,
+          rsiOverbought: parseFloat(process.env.RSI_SELL_THRESHOLD) || null,
+          useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
+          useBbands: process.env.BBAND_USE_UPPER === 'true',
+          bbandsUpper: true,
+          useCci: process.env.CCI_SELL_THRESHOLD !== undefined,
+          cciThreshold: parseFloat(process.env.CCI_SELL_THRESHOLD) || null,
+          useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
+          adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
+          useStoch: process.env.STOCH_SELL_THRESHOLD !== undefined,
+          stochOverbought: parseFloat(process.env.STOCH_SELL_THRESHOLD) || null
+        }
+      };
+
+      const result = evaluateSignal({ ...indicators, config });
+
       console.log(`[SIGNAL][${asset.name}] ${result.signal} - ${result.reason.join(', ')}`);
 
       if (result.signal === 'BUY') buy++;
       else if (result.signal === 'SELL') sell++;
       else hold++;
 
-      if (['BUY', 'SELL'].includes(result.signal)) {
-        await sendEmail(`[${asset.name}] ${result.signal}`, result.reason.join('\n'));
-        console.log(`[EMAIL][${asset.name}] Sent ${result.signal} notification`);
-      }
+      const price = parseFloat(indicators.bbands.values[0].real);
+      const rsi = parseFloat(indicators.rsi.values[0].rsi);
+      const macdVal = parseFloat(indicators.macd.values[0].macd);
+      const cci = parseFloat(indicators.cci.values[0].cci);
+      const ema20 = parseFloat(indicators.ema20.values[0].ema);
+      const sma50 = parseFloat(indicators.sma50.values[0].sma);
+      const adx = parseFloat(indicators.adx.values[0].adx);
+      const stoch = parseFloat(indicators.stochastic.values[0].slow_k);
+
+      const timestamp = new Date().toISOString().replace('T', ' ').replace(/\..+/, '');
+      const subject = `[${fsym}] ${result.signal} Signal at ${timestamp} UTC`;
+
+      const bodyLines = [
+        `Signal: ${result.signal}`,
+        `Price: $${price}`,
+        `RSI: ${rsi}`,
+        `MACD: ${macdVal}`,
+        `CCI: ${cci}`,
+        `EMA20: ${ema20}`,
+        `SMA50: ${sma50}`,
+        `ADX: ${adx}`,
+        `Stochastic: ${stoch}`,
+        `Reason: ${result.reason.join(', ')}`
+      ];
+
+      await sendEmail(subject, bodyLines.join('\n'));
+      console.log(`[EMAIL][${asset.name}] Sent ${result.signal} notification`);
     } catch (error) {
-      console.error(`[CRON ERROR][${asset.name}] ${error.message}`);
+      console.error(`[ERROR][${asset.name}] ${error.message}`);
       hold++;
     }
 
