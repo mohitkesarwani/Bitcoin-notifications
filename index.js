@@ -12,21 +12,24 @@ const cache = {};
  * @param {string} key - Unique cache key for the request.
  * @returns {Promise<any>} The fetched or cached data.
  */
-async function fetchWithCache(url, key) {
+async function fetchWithCache(url, key, context = '') {
   const ttlMinutes = parseInt(process.env.CACHE_TTL_MINUTES || '60', 10);
   const now = Date.now();
   const cached = cache[key];
   if (cached && now - cached.timestamp < ttlMinutes * 60 * 1000) {
-    console.log(`[CACHE] using cached data for ${key}`);
+    const prefix = context ? `[${context}] ` : '';
+    console.log(`[CACHE]${prefix}using cached data for ${key}`);
     return cached.data;
   }
   try {
-    console.log(`[API] fetching ${key} from Twelve Data`);
+    const prefix = context ? `[${context}] ` : '';
+    console.log(`[API]${prefix}fetching ${key} from Twelve Data`);
     const response = await axios.get(url);
     cache[key] = { data: response.data, timestamp: now };
     return response.data;
   } catch (err) {
-    console.error(`[API] failed to fetch ${key}`, err.message);
+    const prefix = context ? `[${context}] ` : '';
+    console.error(`[API]${prefix}failed to fetch ${key}`, err.message);
     throw err;
   }
 }
@@ -39,6 +42,14 @@ const parseNumber = (value) => {
 };
 
 const parseBool = (value) => String(value).toLowerCase() === 'true';
+
+// Map trading pairs to friendly asset names for logging
+const assetNames = {
+  'BTC/USD': 'Bitcoin',
+  'SOL/USD': 'Solana',
+  'XRP/USD': 'XRP',
+  'ADA/USD': 'Cardano'
+};
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -56,9 +67,10 @@ app.get('/api/btc-data', async (req, res) => {
     const priceUrl = `https://api.twelvedata.com/price?symbol=BTC/USD&apikey=${apiKey}`;
     const rsiUrl = `https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close&apikey=${apiKey}`;
 
+    const asset = assetNames['BTC/USD'] || 'BTC/USD';
     const [priceRes, rsiRes] = await Promise.all([
-      fetchWithCache(priceUrl, 'price'),
-      fetchWithCache(rsiUrl, 'rsi')
+      fetchWithCache(priceUrl, 'price', asset),
+      fetchWithCache(rsiUrl, 'rsi', asset)
     ]);
 
     const price = priceRes.price || null;
@@ -98,8 +110,9 @@ app.get('/api/btc-indicators', async (req, res) => {
   };
 
   try {
+    const asset = assetNames[symbol] || symbol;
     const requests = Object.entries(endpoints).map(([key, baseUrl]) =>
-      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, `${symbol}-${key}`)
+      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, `${symbol}-${key}`, asset)
         .then((data) => ({ key, data }))
         .catch((error) => ({ key, error: error.message }))
     );
@@ -163,10 +176,13 @@ app.listen(port, () => {
 
 if (process.env.ENABLE_CRON === 'true') {
   console.log('[INIT] Cron job enabled. Starting evaluation loop...');
-  evaluateSignalJob();
-  setInterval(() => {
-    evaluateSignalJob();
-  }, 4 * 60 * 60 * 1000);
+  const runJob = () => {
+    evaluateSignalJob().catch((err) => {
+      console.error('[CRON ERROR]', err.message);
+    });
+  };
+  runJob();
+  setInterval(runJob, 12 * 60 * 60 * 1000);
 
   setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
