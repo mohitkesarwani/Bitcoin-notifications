@@ -20,9 +20,9 @@ async function sendEmail(subject, text) {
   if (process.env.ENABLE_NOTIFICATIONS !== 'true') return;
 
   const emailFrom = process.env.EMAIL_FROM;
-  const emailTo = process.env.NOTIFICATION_EMAIL;
+  const emailTo = process.env.ALERT_EMAIL || process.env.NOTIFICATION_EMAIL;
   if (!emailFrom || !emailTo) {
-    console.warn('[NOTIFY] EMAIL_FROM or NOTIFICATION_EMAIL not set. Skipping email.');
+    console.warn('[NOTIFY] EMAIL_FROM or ALERT_EMAIL not set. Skipping email.');
     return;
   }
 
@@ -33,18 +33,19 @@ async function sendEmail(subject, text) {
   const fullSubject = prefix ? `${prefix} ${subject}` : subject;
 
   try {
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: emailFrom,
       to: emailTo,
       subject: fullSubject,
       text
     });
-    const response = info?.response || info?.messageId || 'OK';
-    console.log(
-      `[NOTIFY] Sent email from ${emailFrom} to ${emailTo} - Subject: ${fullSubject} - Body: ${text} (${response})`
-    );
+    console.log(`[EMAIL][${subject}] Email sent successfully`);
+    console.log(`  From: ${process.env.EMAIL_FROM}`);
+    console.log(`  To: ${process.env.ALERT_EMAIL}`);
+    console.log(`  Body:\n${text}`);
   } catch (err) {
-    console.warn('[NOTIFY] Failed to send email', err.message);
+    console.error(`[EMAIL ERROR][${subject}] Failed to send to ${process.env.ALERT_EMAIL}`);
+    console.error(err);
   }
 }
 

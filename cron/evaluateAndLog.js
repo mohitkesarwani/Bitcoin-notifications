@@ -152,7 +152,6 @@ async function run() {
       ];
 
       await sendEmail(subject, bodyLines.join('\n'));
-      console.log(`[EMAIL][${asset.name}] Sent ${result.signal} notification`);
     } catch (error) {
       console.error(`[ERROR][${asset.name}] ${error.message}`);
       hold++;
