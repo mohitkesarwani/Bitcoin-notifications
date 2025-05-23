@@ -2,6 +2,34 @@ import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
+// Simple in-memory cache to avoid excessive Twelve Data requests
+const cache = {};
+
+/**
+ * Fetch data from a URL with caching.
+ * @param {string} url - The Twelve Data endpoint including query params.
+ * @param {string} key - Unique cache key for the request.
+ * @returns {Promise<any>} The fetched or cached data.
+ */
+async function fetchWithCache(url, key) {
+  const ttlMinutes = parseInt(process.env.CACHE_TTL_MINUTES || '60', 10);
+  const now = Date.now();
+  const cached = cache[key];
+  if (cached && now - cached.timestamp < ttlMinutes * 60 * 1000) {
+    console.log(`[CACHE] using cached data for ${key}`);
+    return cached.data;
+  }
+  try {
+    console.log(`[API] fetching ${key} from Twelve Data`);
+    const response = await axios.get(url);
+    cache[key] = { data: response.data, timestamp: now };
+    return response.data;
+  } catch (err) {
+    console.error(`[API] failed to fetch ${key}`, err.message);
+    throw err;
+  }
+}
+
 dotenv.config();
 
 const parseNumber = (value) => {
@@ -28,16 +56,16 @@ app.get('/api/btc-data', async (req, res) => {
     const rsiUrl = `https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close&apikey=${apiKey}`;
 
     const [priceRes, rsiRes] = await Promise.all([
-      axios.get(priceUrl),
-      axios.get(rsiUrl)
+      fetchWithCache(priceUrl, 'price'),
+      fetchWithCache(rsiUrl, 'rsi')
     ]);
 
-    const price = priceRes.data.price || null;
+    const price = priceRes.price || null;
     let rsi = null;
-    if (Array.isArray(rsiRes.data.values) && rsiRes.data.values.length > 0) {
-      rsi = rsiRes.data.values[0].rsi;
-    } else if (typeof rsiRes.data.rsi !== 'undefined') {
-      rsi = rsiRes.data.rsi;
+    if (Array.isArray(rsiRes.values) && rsiRes.values.length > 0) {
+      rsi = rsiRes.values[0].rsi;
+    } else if (typeof rsiRes.rsi !== 'undefined') {
+      rsi = rsiRes.rsi;
     }
 
     return res.json({ price, rsi });
@@ -68,9 +96,8 @@ app.get('/api/btc-indicators', async (req, res) => {
 
   try {
     const requests = Object.entries(endpoints).map(([key, baseUrl]) =>
-      axios
-        .get(`${baseUrl}&apikey=${apiKey}`)
-        .then((response) => ({ key, data: response.data }))
+      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, key)
+        .then((data) => ({ key, data }))
         .catch((error) => ({ key, error: error.message }))
     );
 

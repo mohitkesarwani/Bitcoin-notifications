@@ -17,6 +17,10 @@ cp .env.example .env
 # Edit .env and add your API key
 ```
 
+The `.env` file also allows configuration of `CACHE_TTL_MINUTES` which
+controls how long API responses are cached. Increasing this value reduces
+the number of requests made to Twelve Data.
+
 3. Start the server:
 
 ```bash
@@ -84,3 +88,10 @@ to [Render](https://render.com). To deploy:
 
 Render will then build and start the server using the commands defined in
 `render.yaml`.
+
+## Logging
+
+Each API request to Twelve Data is logged to the console. Successful requests
+are prefixed with `[API]` and cache hits with `[CACHE]`. Errors are logged with
+`[API]` followed by the error message so they can be viewed in platforms like
+Railway or Render.
