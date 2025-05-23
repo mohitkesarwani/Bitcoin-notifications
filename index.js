@@ -1,6 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { run as cronRun } from './cron/evaluateAndLog.js';
 
 // Simple in-memory cache to avoid excessive Twelve Data requests
 const cache = {};
@@ -157,3 +158,12 @@ app.get('/api/btc-indicators', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+if (process.env.ENABLE_CRON === 'true') {
+  console.log('[CRON] ENABLE_CRON is true. Scheduling job every 15 minutes');
+  const startCron = () => cronRun().catch((err) => {
+    console.error('[CRON] Error during run', err.message);
+  });
+  startCron();
+  setInterval(startCron, 15 * 60 * 1000);
+}
