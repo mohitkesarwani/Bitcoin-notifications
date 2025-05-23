@@ -40,7 +40,9 @@ async function sendEmail(subject, text) {
       text
     });
     const response = info?.response || info?.messageId || 'OK';
-    console.log(`[NOTIFY] Email sent: ${fullSubject} (${response})`);
+    console.log(
+      `[NOTIFY] Sent email from ${emailFrom} to ${emailTo} - Subject: ${fullSubject} - Body: ${text} (${response})`
+    );
   } catch (err) {
     console.warn('[NOTIFY] Failed to send email', err.message);
   }
