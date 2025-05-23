@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { run as cronRun } from './cron/evaluateAndLog.js';
+import { run as evaluateSignalJob } from './cron/evaluateAndLog.js';
 
 // Simple in-memory cache to avoid excessive Twelve Data requests
 const cache = {};
@@ -160,10 +160,13 @@ app.listen(port, () => {
 });
 
 if (process.env.ENABLE_CRON === 'true') {
-  console.log('[CRON] ENABLE_CRON is true. Scheduling job every 15 minutes');
-  const startCron = () => cronRun().catch((err) => {
-    console.error('[CRON] Error during run', err.message);
-  });
-  startCron();
-  setInterval(startCron, 15 * 60 * 1000);
+  console.log('[INIT] Cron job enabled. Starting evaluation loop...');
+  evaluateSignalJob();
+  setInterval(() => {
+    evaluateSignalJob();
+  }, 15 * 60 * 1000);
+
+  setInterval(() => {
+    console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
+  }, 60 * 1000);
 }
