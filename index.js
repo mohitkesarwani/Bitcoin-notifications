@@ -84,20 +84,22 @@ app.get('/api/btc-indicators', async (req, res) => {
       .json({ error: 'TWELVE_DATA_API_KEY is not configured' });
   }
 
+  const symbol = req.query.symbol || 'BTC/USD';
+
   const endpoints = {
-    rsi: 'https://api.twelvedata.com/rsi?symbol=BTC/USD&interval=1h&time_period=14&series_type=close',
-    macd: 'https://api.twelvedata.com/macd?symbol=BTC/USD&interval=1h&series_type=close',
-    ema20: 'https://api.twelvedata.com/ema?symbol=BTC/USD&interval=1h&time_period=20&series_type=close',
-    sma50: 'https://api.twelvedata.com/sma?symbol=BTC/USD&interval=1h&time_period=50&series_type=close',
-    bbands: 'https://api.twelvedata.com/bbands?symbol=BTC/USD&interval=1h&time_period=20&series_type=close&sd=2',
-    stochastic: 'https://api.twelvedata.com/stoch?symbol=BTC/USD&interval=1h',
-    adx: 'https://api.twelvedata.com/adx?symbol=BTC/USD&interval=1h&time_period=14',
-    cci: 'https://api.twelvedata.com/cci?symbol=BTC/USD&interval=1h&time_period=20&series_type=close'
+    rsi: `https://api.twelvedata.com/rsi?symbol=${symbol}&interval=1h&time_period=14&series_type=close`,
+    macd: `https://api.twelvedata.com/macd?symbol=${symbol}&interval=1h&series_type=close`,
+    ema20: `https://api.twelvedata.com/ema?symbol=${symbol}&interval=1h&time_period=20&series_type=close`,
+    sma50: `https://api.twelvedata.com/sma?symbol=${symbol}&interval=1h&time_period=50&series_type=close`,
+    bbands: `https://api.twelvedata.com/bbands?symbol=${symbol}&interval=1h&time_period=20&series_type=close&sd=2`,
+    stochastic: `https://api.twelvedata.com/stoch?symbol=${symbol}&interval=1h`,
+    adx: `https://api.twelvedata.com/adx?symbol=${symbol}&interval=1h&time_period=14`,
+    cci: `https://api.twelvedata.com/cci?symbol=${symbol}&interval=1h&time_period=20&series_type=close`
   };
 
   try {
     const requests = Object.entries(endpoints).map(([key, baseUrl]) =>
-      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, key)
+      fetchWithCache(`${baseUrl}&apikey=${apiKey}`, `${symbol}-${key}`)
         .then((data) => ({ key, data }))
         .catch((error) => ({ key, error: error.message }))
     );
@@ -164,7 +166,7 @@ if (process.env.ENABLE_CRON === 'true') {
   evaluateSignalJob();
   setInterval(() => {
     evaluateSignalJob();
-  }, 15 * 60 * 1000);
+  }, 4 * 60 * 60 * 1000);
 
   setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
