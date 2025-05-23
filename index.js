@@ -236,13 +236,12 @@ if (process.env.ENABLE_CRON === 'true') {
   console.log('[INIT] Cron job enabled. Starting evaluation loop...');
   const runJob = () => {
     cronRun().catch((err) => {
-      console.error('[CRON ERROR]', err.message);
+      console.error('[CRON ERROR]', err);
     });
   };
   runJob();
-  cronInterval = setInterval(runJob, 30 * 60 * 1000);
-
+  cronInterval = setInterval(runJob, 12 * 60 * 60 * 1000);
   aliveInterval = setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
-  }, 5 * 60 * 1000);
+  }, 60 * 1000);
 }
