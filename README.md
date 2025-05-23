@@ -96,6 +96,10 @@ prefixed with `[API]` while cache hits use `[CACHE]`. Both successful and failed
 requests are recorded so they can be viewed in platforms like Railway or
 Render. Failures include the reason in the log message.
 
+When a notification email is sent, an additional `[NOTIFY]` log entry records
+the sender and recipient addresses along with the subject and full body of the
+email.
+
 ## Background Cron Job
 
 If `ENABLE_CRON=true` is set in the environment, the server will run a
