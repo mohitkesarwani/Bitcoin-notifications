@@ -5,7 +5,7 @@ services:
     buildCommand: 'npm install'
     startCommand: 'npm start'
     envVars:
-      - key: TWELVE_DATA_API_KEY
+      - key: CRYPTOCOMPARE_API_KEY
         sync: false
   - type: worker
     name: bitcoin-notification-cron
