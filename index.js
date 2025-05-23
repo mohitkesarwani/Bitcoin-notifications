@@ -11,7 +11,7 @@ import {
   CCI,
   Stochastic
 } from 'technicalindicators';
-import { run as evaluateSignalJob } from './cron/evaluateAndLog.js';
+import { run as cronRun } from './cron/evaluateAndLog.js';
 
 // Simple in-memory cache to avoid excessive API requests
 const cache = {};
@@ -46,6 +46,14 @@ async function fetchWithCache(url, key, context = '') {
 }
 
 dotenv.config();
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
 
 const parseNumber = (value) => {
   const num = parseFloat(value);
@@ -135,7 +143,9 @@ function calculateIndicators(candles) {
 }
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
+
+app.get('/', (req, res) => res.send('OK'));
 
 
 app.get('/api/btc-data', async (req, res) => {
@@ -225,12 +235,12 @@ process.on('SIGINT', shutdown);
 if (process.env.ENABLE_CRON === 'true') {
   console.log('[INIT] Cron job enabled. Starting evaluation loop...');
   const runJob = () => {
-    evaluateSignalJob().catch((err) => {
+    cronRun().catch((err) => {
       console.error('[CRON ERROR]', err.message);
     });
   };
   runJob();
-  cronInterval = setInterval(runJob, 30 * 60 * 1000);
+  cronInterval = setInterval(runJob, 12 * 60 * 60 * 1000);
 
   aliveInterval = setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
