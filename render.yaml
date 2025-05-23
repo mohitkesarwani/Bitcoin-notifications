@@ -7,3 +7,10 @@ services:
     envVars:
       - key: TWELVE_DATA_API_KEY
         sync: false
+  - type: worker
+    name: bitcoin-notification-cron
+    env: node
+    buildCommand: 'npm install'
+    startCommand: 'node cron/evaluateAndLog.js'
+    envVars:
+      - fromGroup: bitcoin-notification-api
