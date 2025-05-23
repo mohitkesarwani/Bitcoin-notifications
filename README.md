@@ -95,3 +95,11 @@ Each API request to Twelve Data is logged to the console. Successful requests
 are prefixed with `[API]` and cache hits with `[CACHE]`. Errors are logged with
 `[API]` followed by the error message so they can be viewed in platforms like
 Railway or Render.
+
+## Background Cron Job
+
+If `ENABLE_CRON=true` is set in the environment, the server will run a
+background task every 15 minutes. This task fetches `/api/btc-indicators`,
+evaluates the trading signal and logs the result. When email credentials are
+configured and `ENABLE_NOTIFICATIONS=true`, alert emails are sent on BUY or
+SELL signals.
