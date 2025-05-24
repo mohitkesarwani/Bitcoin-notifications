@@ -82,6 +82,7 @@ async function run() {
     let buy = 0;
     let sell = 0;
     let hold = 0;
+    const results = [];
 
   for (const asset of trackedAssets) {
     console.log(`[CRON] Checking ${asset.name} at ${new Date().toISOString()}`);
@@ -136,23 +137,21 @@ async function run() {
       const adx = parseFloat(indicators.adx.values[0].adx);
       const stoch = parseFloat(indicators.stochastic.values[0].slow_k);
 
-      const timestamp = new Date().toISOString().replace('T', ' ').replace(/\..+/, '');
-      const subject = `[${fsym}] ${result.signal} Signal at ${timestamp} UTC`;
-
-      const bodyLines = [
-        `Signal: ${result.signal}`,
-        `Price: $${price}`,
-        `RSI: ${rsi}`,
-        `MACD: ${macdVal}`,
-        `CCI: ${cci}`,
-        `EMA20: ${ema20}`,
-        `SMA50: ${sma50}`,
-        `ADX: ${adx}`,
-        `Stochastic: ${stoch}`,
-        `Reason: ${result.reason.join(', ')}`
-      ];
-
-      await sendEmail(subject, bodyLines.join('\n'));
+      results.push({
+        asset: fsym,
+        signal: result.signal,
+        reason: result.reason,
+        price,
+        indicators: {
+          rsi,
+          macd: macdVal,
+          adx,
+          cci,
+          ema20,
+          sma50,
+          stoch
+        }
+      });
     } catch (error) {
       console.error(`[ERROR][${asset.name}] ${error.message}`);
       hold++;
@@ -160,6 +159,23 @@ async function run() {
 
     await delay(1500);
   }
+
+    const combinedText = results
+      .map((r) =>
+        [
+          `🚨 ${r.asset} SIGNAL: ${r.signal}`,
+          `Price: $${r.price}`,
+          `RSI: ${r.indicators.rsi} | MACD: ${r.indicators.macd} | ADX: ${r.indicators.adx} | CCI: ${r.indicators.cci}`,
+          `Reason: ${r.reason.join(', ')}`
+        ].join('\n')
+      )
+      .join('\n\n');
+
+    const subject = `Crypto Signal Summary at ${new Date().toISOString()}`;
+
+    console.log('[EMAIL] Combined signal summary:\n', combinedText);
+
+    await sendEmail(subject, combinedText);
 
     console.log(`[CRON COMPLETE] ${trackedAssets.length} assets checked, ${buy} BUY, ${sell} SELL, ${hold} HOLD`);
   } catch (err) {
