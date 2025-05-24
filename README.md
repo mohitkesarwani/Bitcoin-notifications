@@ -96,9 +96,10 @@ prefixed with `[API]` while cache hits use `[CACHE]`. Both successful and failed
 requests are recorded so they can be viewed in platforms like Railway or
 Render. Failures include the reason in the log message.
 
-When a notification email is sent, an additional `[NOTIFY]` log entry records
-the sender and recipient addresses along with the subject and full body of the
-email.
+Whenever the application triggers an email notification it writes a log entry
+prefixed with `[EMAIL]`.  The logs capture successful sends as well as cases
+where a message is skipped due to missing configuration or disabled
+notifications, so you can always see why an email was or was not sent.
 
 ## Background Cron Job
 
