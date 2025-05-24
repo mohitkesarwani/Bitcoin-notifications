@@ -77,10 +77,11 @@ function calculateIndicators(candles) {
 }
 
 async function run() {
-  console.log(`[CRON START] Evaluating ${trackedAssets.length} assets`);
-  let buy = 0;
-  let sell = 0;
-  let hold = 0;
+  try {
+    console.log(`[CRON START] Evaluating ${trackedAssets.length} assets`);
+    let buy = 0;
+    let sell = 0;
+    let hold = 0;
 
   for (const asset of trackedAssets) {
     console.log(`[CRON] Checking ${asset.name} at ${new Date().toISOString()}`);
@@ -160,7 +161,17 @@ async function run() {
     await delay(1500);
   }
 
-  console.log(`[CRON COMPLETE] ${trackedAssets.length} assets checked, ${buy} BUY, ${sell} SELL, ${hold} HOLD`);
+    console.log(`[CRON COMPLETE] ${trackedAssets.length} assets checked, ${buy} BUY, ${sell} SELL, ${hold} HOLD`);
+  } catch (err) {
+    console.error(`[CRON ERROR] ${err.message}`);
+    throw err;
+  }
 }
 
 export { run };
+
+if (process.argv[1] && process.argv[1].includes('evaluateAndLog.js')) {
+  run().catch((err) => {
+    console.error('[UNCAUGHT CRON ERROR]', err);
+  });
+}
