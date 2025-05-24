@@ -1,145 +1,93 @@
-function evaluateSignal(data) {
-  const result = { signal: 'HOLD', reason: [] };
-  if (!data || !data.config) {
-    return result;
+function evaluateSignal({
+  rsi,
+  macd,
+  macdSignal,
+  adx,
+  cci,
+  stochasticK,
+  stochasticD,
+  price,
+  previousMacd,
+  previousSignal
+}) {
+  const reasons = [];
+  const seen = new Set();
+  let bullish = 0;
+  let bearish = 0;
+
+  const addReason = (reason, type) => {
+    if (!seen.has(reason)) {
+      seen.add(reason);
+      reasons.push(reason);
+    }
+    if (type === 'bullish') bullish += 1;
+    if (type === 'bearish') bearish += 1;
+  };
+
+  if (!Number.isNaN(rsi)) {
+    if (rsi < 30) {
+      addReason('RSI below 30', 'bullish');
+    } else if (rsi > 70) {
+      addReason('RSI above 70', 'bearish');
+    }
   }
 
-  const buyRules = data.config.buyRules || {};
-  const sellRules = data.config.sellRules || {};
-
-  const rsi = parseFloat(data?.rsi?.values?.[0]?.rsi);
-  const macd = parseFloat(data?.macd?.values?.[0]?.macd);
-  const macdSignal = parseFloat(data?.macd?.values?.[0]?.macd_signal);
-  const price = parseFloat(data?.bbands?.values?.[0]?.real);
-  const lowerBand = parseFloat(data?.bbands?.values?.[0]?.lower_band);
-  const upperBand = parseFloat(data?.bbands?.values?.[0]?.upper_band);
-  const cci = parseFloat(data?.cci?.values?.[0]?.cci);
-  const adx = parseFloat(data?.adx?.values?.[0]?.adx);
-  const stoch = parseFloat(data?.stochastic?.values?.[0]?.slow_k);
-
-  const buyReasons = [];
-  const sellReasons = [];
-
-  if (
-    buyRules.useRsi &&
-    !Number.isNaN(rsi) &&
-    buyRules.rsiOversold != null &&
-    rsi < buyRules.rsiOversold
-  ) {
-    buyReasons.push(`RSI below ${buyRules.rsiOversold}`);
-  }
-  if (
-    sellRules.useRsi &&
-    !Number.isNaN(rsi) &&
-    sellRules.rsiOverbought != null &&
-    rsi > sellRules.rsiOverbought
-  ) {
-    sellReasons.push(`RSI above ${sellRules.rsiOverbought}`);
+  if (!Number.isNaN(macd) && !Number.isNaN(macdSignal)) {
+    if (
+      macd > macdSignal &&
+      (Number.isNaN(previousMacd) || Number.isNaN(previousSignal) || previousMacd <= previousSignal)
+    ) {
+      addReason('MACD bullish crossover', 'bullish');
+    } else if (
+      macd < macdSignal &&
+      (Number.isNaN(previousMacd) || Number.isNaN(previousSignal) || previousMacd >= previousSignal)
+    ) {
+      addReason('MACD bearish crossover', 'bearish');
+    }
   }
 
-  if (
-    buyRules.useMacd &&
-    !Number.isNaN(macd) &&
-    !Number.isNaN(macdSignal) &&
-    macd > macdSignal
-  ) {
-    buyReasons.push('MACD bullish crossover');
-  }
-  if (
-    sellRules.useMacd &&
-    !Number.isNaN(macd) &&
-    !Number.isNaN(macdSignal) &&
-    macd < macdSignal
-  ) {
-    sellReasons.push('MACD bearish crossover');
+  if (!Number.isNaN(adx)) {
+    if (adx > 20) {
+      addReason('ADX above 20', 'bullish');
+    } else if (adx < 20) {
+      addReason('ADX below 20', 'bearish');
+    }
   }
 
-  if (
-    buyRules.useBbands &&
-    !Number.isNaN(price) &&
-    !Number.isNaN(lowerBand) &&
-    price < lowerBand
-  ) {
-    buyReasons.push('Price below Bollinger lower band');
-  }
-  if (
-    sellRules.useBbands &&
-    !Number.isNaN(price) &&
-    !Number.isNaN(upperBand) &&
-    price > upperBand
-  ) {
-    sellReasons.push('Price above Bollinger upper band');
+  if (!Number.isNaN(cci)) {
+    if (cci < -100) {
+      addReason('CCI below -100', 'bullish');
+    } else if (cci > 100) {
+      addReason('CCI above 100', 'bearish');
+    }
   }
 
-  if (
-    buyRules.useCci &&
-    !Number.isNaN(cci) &&
-    buyRules.cciThreshold != null &&
-    cci < buyRules.cciThreshold
-  ) {
-    buyReasons.push(`CCI below ${buyRules.cciThreshold}`);
-  }
-  if (
-    sellRules.useCci &&
-    !Number.isNaN(cci) &&
-    sellRules.cciThreshold != null &&
-    cci > sellRules.cciThreshold
-  ) {
-    sellReasons.push(`CCI above ${sellRules.cciThreshold}`);
+  if (!Number.isNaN(stochasticK)) {
+    if (stochasticK > 80) {
+      addReason('Stochastic above 80', 'bearish');
+    } else if (stochasticK < 20) {
+      addReason('Stochastic below 20', 'bullish');
+    }
   }
 
-  if (
-    buyRules.useAdx &&
-    !Number.isNaN(adx) &&
-    buyRules.adxThreshold != null &&
-    adx > buyRules.adxThreshold
-  ) {
-    buyReasons.push(`ADX above ${buyRules.adxThreshold}`);
-  }
-  if (
-    sellRules.useAdx &&
-    !Number.isNaN(adx) &&
-    sellRules.adxThreshold != null &&
-    adx > sellRules.adxThreshold
-  ) {
-    sellReasons.push(`ADX above ${sellRules.adxThreshold}`);
+  let signal = 'HOLD';
+
+  if (bullish >= 3 && bearish <= 1) {
+    signal = 'BUY';
+  } else if (bearish >= 3 && bullish <= 1) {
+    signal = 'SELL';
+  } else if (bullish > 0 && bearish > 0) {
+    addReason('Conflicting signals');
   }
 
-  if (
-    buyRules.useStoch &&
-    !Number.isNaN(stoch) &&
-    buyRules.stochOversold != null &&
-    stoch < buyRules.stochOversold
-  ) {
-    buyReasons.push(`Stochastic below ${buyRules.stochOversold}`);
-  }
-  if (
-    sellRules.useStoch &&
-    !Number.isNaN(stoch) &&
-    sellRules.stochOverbought != null &&
-    stoch > sellRules.stochOverbought
-  ) {
-    sellReasons.push(`Stochastic above ${sellRules.stochOverbought}`);
+  if (reasons.length === 0) {
+    reasons.push('No trigger conditions met');
   }
 
-  const buy = buyReasons.length > 0;
-  const sell = sellReasons.length > 0;
-
-  if (buy && !sell) {
-    result.signal = 'BUY';
-    result.reason = buyReasons;
-  } else if (sell && !buy) {
-    result.signal = 'SELL';
-    result.reason = sellReasons;
-  } else if (buy && sell) {
-    result.signal = 'HOLD';
-    result.reason = [...buyReasons, ...sellReasons, 'Conflicting signals'];
-  }
-  if (result.reason.length === 0) {
-    result.reason.push('No trigger conditions met');
-  }
-
-  return result;
+  return {
+    signal,
+    reason: reasons
+  };
 }
 
 export { evaluateSignal };

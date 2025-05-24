@@ -54,7 +54,14 @@ function calculateIndicators(candles) {
   const lows = candles.map((c) => c.low);
 
   const rsiArr = RSI.calculate({ values: closes, period: 14 });
-  const macdArr = MACD.calculate({ values: closes, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, SimpleMAOscillator: false, SimpleMASignal: false });
+  const macdArr = MACD.calculate({
+    values: closes,
+    fastPeriod: 12,
+    slowPeriod: 26,
+    signalPeriod: 9,
+    SimpleMAOscillator: false,
+    SimpleMASignal: false
+  });
   const ema20Arr = EMA.calculate({ period: 20, values: closes });
   const sma50Arr = SMA.calculate({ period: 50, values: closes });
   const bbArr = BollingerBands.calculate({ period: 20, values: closes, stdDev: 2 });
@@ -65,14 +72,18 @@ function calculateIndicators(candles) {
   const price = closes[closes.length - 1];
 
   return {
-    rsi: { values: [{ rsi: rsiArr[rsiArr.length - 1] }] },
-    macd: { values: [{ macd: macdArr[macdArr.length - 1]?.MACD, macd_signal: macdArr[macdArr.length - 1]?.signal }] },
-    ema20: { values: [{ ema: ema20Arr[ema20Arr.length - 1] }] },
-    sma50: { values: [{ sma: sma50Arr[sma50Arr.length - 1] }] },
-    bbands: { values: [{ real: price, lower_band: bbArr[bbArr.length - 1]?.lower, upper_band: bbArr[bbArr.length - 1]?.upper }] },
-    stochastic: { values: [{ slow_k: stochArr[stochArr.length - 1]?.k, slow_d: stochArr[stochArr.length - 1]?.d }] },
-    adx: { values: [{ adx: adxArr[adxArr.length - 1]?.adx }] },
-    cci: { values: [{ cci: cciArr[cciArr.length - 1] }] }
+    rsi: rsiArr[rsiArr.length - 1],
+    macd: macdArr[macdArr.length - 1]?.MACD,
+    macdSignal: macdArr[macdArr.length - 1]?.signal,
+    previousMacd: macdArr[macdArr.length - 2]?.MACD,
+    previousSignal: macdArr[macdArr.length - 2]?.signal,
+    ema20: ema20Arr[ema20Arr.length - 1],
+    sma50: sma50Arr[sma50Arr.length - 1],
+    bbands: { real: price, lower: bbArr[bbArr.length - 1]?.lower, upper: bbArr[bbArr.length - 1]?.upper },
+    stochasticK: stochArr[stochArr.length - 1]?.k,
+    stochasticD: stochArr[stochArr.length - 1]?.d,
+    adx: adxArr[adxArr.length - 1]?.adx,
+    cci: cciArr[cciArr.length - 1]
   };
 }
 
@@ -91,36 +102,18 @@ async function run() {
       const candles = await fetchOhlcv(fsym, tsym);
       const indicators = calculateIndicators(candles);
 
-      const config = {
-        buyRules: {
-          useRsi: process.env.RSI_BUY_THRESHOLD !== undefined,
-          rsiOversold: parseFloat(process.env.RSI_BUY_THRESHOLD) || null,
-          useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
-          useBbands: process.env.BBAND_USE_LOWER === 'true',
-          bbandsLower: true,
-          useCci: process.env.CCI_BUY_THRESHOLD !== undefined,
-          cciThreshold: parseFloat(process.env.CCI_BUY_THRESHOLD) || null,
-          useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
-          adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
-          useStoch: process.env.STOCH_BUY_THRESHOLD !== undefined,
-          stochOversold: parseFloat(process.env.STOCH_BUY_THRESHOLD) || null
-        },
-        sellRules: {
-          useRsi: process.env.RSI_SELL_THRESHOLD !== undefined,
-          rsiOverbought: parseFloat(process.env.RSI_SELL_THRESHOLD) || null,
-          useMacd: process.env.MACD_STRATEGY_ENABLED === 'true',
-          useBbands: process.env.BBAND_USE_UPPER === 'true',
-          bbandsUpper: true,
-          useCci: process.env.CCI_SELL_THRESHOLD !== undefined,
-          cciThreshold: parseFloat(process.env.CCI_SELL_THRESHOLD) || null,
-          useAdx: process.env.ADX_MIN_STRENGTH !== undefined,
-          adxThreshold: parseFloat(process.env.ADX_MIN_STRENGTH) || null,
-          useStoch: process.env.STOCH_SELL_THRESHOLD !== undefined,
-          stochOverbought: parseFloat(process.env.STOCH_SELL_THRESHOLD) || null
-        }
-      };
-
-      const result = evaluateSignal({ ...indicators, config });
+      const result = evaluateSignal({
+        rsi: indicators.rsi,
+        macd: indicators.macd,
+        macdSignal: indicators.macdSignal,
+        adx: indicators.adx,
+        cci: indicators.cci,
+        stochasticK: indicators.stochasticK,
+        stochasticD: indicators.stochasticD,
+        price: indicators.bbands.real,
+        previousMacd: indicators.previousMacd,
+        previousSignal: indicators.previousSignal
+      });
 
       console.log(`[SIGNAL][${asset.name}] ${result.signal} - ${result.reason.join(', ')}`);
 
@@ -128,14 +121,14 @@ async function run() {
       else if (result.signal === 'SELL') sell++;
       else hold++;
 
-      const price = parseFloat(indicators.bbands.values[0].real);
-      const rsi = parseFloat(indicators.rsi.values[0].rsi);
-      const macdVal = parseFloat(indicators.macd.values[0].macd);
-      const cci = parseFloat(indicators.cci.values[0].cci);
-      const ema20 = parseFloat(indicators.ema20.values[0].ema);
-      const sma50 = parseFloat(indicators.sma50.values[0].sma);
-      const adx = parseFloat(indicators.adx.values[0].adx);
-      const stoch = parseFloat(indicators.stochastic.values[0].slow_k);
+      const price = indicators.bbands.real;
+      const rsi = indicators.rsi;
+      const macdVal = indicators.macd;
+      const cci = indicators.cci;
+      const ema20 = indicators.ema20;
+      const sma50 = indicators.sma50;
+      const adx = indicators.adx;
+      const stoch = indicators.stochasticK;
 
       results.push({
         asset: fsym,
