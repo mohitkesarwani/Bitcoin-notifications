@@ -1,0 +1,17 @@
+{
+  "alertEmail": "you@example.com",
+  "rsiBuyThreshold": 30,
+  "rsiSellThreshold": 70,
+  "macdSignal": 0,
+  "adxMinStrength": 20,
+  "cciBuyThreshold": 100,
+  "cciSellThreshold": -100,
+  "stochBuyThreshold": 20,
+  "stochSellThreshold": 80,
+  "enabledCoins": ["BTC", "ETH", "SOL", "XRP", "ADA"],
+  "useRsi": true,
+  "useMacd": true,
+  "useAdx": true,
+  "useCci": true,
+  "useStoch": true
+}

@@ -1,16 +1,17 @@
 services:
   - type: web
     name: bitcoin-notification-api
+    rootDir: api
     env: node
-    buildCommand: 'npm install'
-    startCommand: 'npm start'
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
-      - key: CRYPTOCOMPARE_API_KEY
+      - key: TWELVE_DATA_API_KEY
         sync: false
-  - type: worker
-    name: bitcoin-notification-cron
-    env: node
-    buildCommand: 'npm install'
-    startCommand: 'node cron/evaluateAndLog.js'
-    envVars:
-      - fromGroup: bitcoin-notification-api
+
+  - type: web
+    name: bitcoin-dashboard
+    rootDir: client
+    env: static
+    buildCommand: npm install && npm run build
+    startCommand: serve -s dist
