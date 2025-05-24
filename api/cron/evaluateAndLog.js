@@ -87,7 +87,23 @@ function calculateIndicators(candles) {
   };
 }
 
-async function run() {
+async function run(config = {}) {
+  if (!Object.keys(config).length) {
+    config = {
+      rsiBuyThreshold: Number(process.env.RSI_BUY_THRESHOLD || 30),
+      rsiSellThreshold: Number(process.env.RSI_SELL_THRESHOLD || 70),
+      adxMinStrength: Number(process.env.ADX_MIN_STRENGTH || 20),
+      cciBuyThreshold: Number(process.env.CCI_BUY_THRESHOLD || 100),
+      cciSellThreshold: Number(process.env.CCI_SELL_THRESHOLD || -100),
+      stochBuyThreshold: Number(process.env.STOCH_BUY_THRESHOLD || 20),
+      stochSellThreshold: Number(process.env.STOCH_SELL_THRESHOLD || 80),
+      useRsi: process.env.USE_RSI !== 'false',
+      useMacd: process.env.USE_MACD !== 'false',
+      useAdx: process.env.USE_ADX !== 'false',
+      useCci: process.env.USE_CCI !== 'false',
+      useStoch: process.env.USE_STOCH !== 'false'
+    };
+  }
   try {
     console.log(`[CRON START] Evaluating ${trackedAssets.length} assets`);
     let buy = 0;
@@ -113,7 +129,7 @@ async function run() {
         price: indicators.bbands.real,
         previousMacd: indicators.previousMacd,
         previousSignal: indicators.previousSignal
-      });
+      }, config);
 
       console.log(`[SIGNAL][${asset.name}] ${result.signal} - ${result.reason.join(', ')}`);
 

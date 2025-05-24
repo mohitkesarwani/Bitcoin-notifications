@@ -9,7 +9,21 @@ function evaluateSignal({
   price,
   previousMacd,
   previousSignal
-}) {
+}, config = {}) {
+  const {
+    rsiBuyThreshold = 30,
+    rsiSellThreshold = 70,
+    adxMinStrength = 20,
+    cciBuyThreshold = 100,
+    cciSellThreshold = -100,
+    stochBuyThreshold = 20,
+    stochSellThreshold = 80,
+    useRsi = true,
+    useMacd = true,
+    useAdx = true,
+    useCci = true,
+    useStoch = true
+  } = config;
   const reasons = [];
   const seen = new Set();
   let bullish = 0;
@@ -24,15 +38,15 @@ function evaluateSignal({
     if (type === 'bearish') bearish += 1;
   };
 
-  if (!Number.isNaN(rsi)) {
-    if (rsi < 30) {
+  if (useRsi && !Number.isNaN(rsi)) {
+    if (rsiBuyThreshold !== null && rsi < rsiBuyThreshold) {
       addReason('RSI oversold', 'bullish');
-    } else if (rsi > 70) {
+    } else if (rsiSellThreshold !== null && rsi > rsiSellThreshold) {
       addReason('RSI overbought', 'bearish');
     }
   }
 
-  if (!Number.isNaN(macd) && !Number.isNaN(macdSignal)) {
+  if (useMacd && !Number.isNaN(macd) && !Number.isNaN(macdSignal)) {
     if (
       macd > macdSignal &&
       (Number.isNaN(previousMacd) || Number.isNaN(previousSignal) || previousMacd <= previousSignal)
@@ -46,24 +60,24 @@ function evaluateSignal({
     }
   }
 
-  if (!Number.isNaN(adx)) {
-    if (adx > 20) {
-      addReason('ADX above 20', 'bullish');
+  if (useAdx && !Number.isNaN(adx)) {
+    if (adxMinStrength !== null && adx > adxMinStrength) {
+      addReason(`ADX above ${adxMinStrength}`, 'bullish');
     }
   }
 
-  if (!Number.isNaN(cci)) {
-    if (cci > 100) {
+  if (useCci && !Number.isNaN(cci)) {
+    if (cciBuyThreshold !== null && cci > cciBuyThreshold) {
       addReason('CCI bullish', 'bullish');
-    } else if (cci < -100) {
+    } else if (cciSellThreshold !== null && cci < cciSellThreshold) {
       addReason('CCI bearish', 'bearish');
     }
   }
 
-  if (!Number.isNaN(stochasticK)) {
-    if (stochasticK > 80) {
+  if (useStoch && !Number.isNaN(stochasticK)) {
+    if (stochSellThreshold !== null && stochasticK > stochSellThreshold) {
       addReason('Stochastic overbought (bullish continuation)', 'bullish');
-    } else if (stochasticK < 20) {
+    } else if (stochBuyThreshold !== null && stochasticK < stochBuyThreshold) {
       addReason('Stochastic oversold (bearish continuation)', 'bearish');
     }
   }
