@@ -240,7 +240,7 @@ if (process.env.ENABLE_CRON === 'true') {
     });
   };
   runJob();
-  cronInterval = setInterval(runJob, 12 * 60 * 60 * 1000);
+  cronInterval = setInterval(runJob, 30 * 60 * 1000);
   aliveInterval = setInterval(() => {
     console.log(`[DEBUG] App is alive at ${new Date().toISOString()}`);
   }, 60 * 1000);
