@@ -2,9 +2,9 @@ services:
   - type: web
     name: bitcoin-notification-api
     rootDir: api
-    env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node index.js
+    env: node
     envVars:
       - key: TWELVE_DATA_API_KEY
         sync: false
