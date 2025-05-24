@@ -26,9 +26,9 @@ function evaluateSignal({
 
   if (!Number.isNaN(rsi)) {
     if (rsi < 30) {
-      addReason('RSI below 30', 'bullish');
+      addReason('RSI oversold', 'bullish');
     } else if (rsi > 70) {
-      addReason('RSI above 70', 'bearish');
+      addReason('RSI overbought', 'bearish');
     }
   }
 
@@ -49,24 +49,22 @@ function evaluateSignal({
   if (!Number.isNaN(adx)) {
     if (adx > 20) {
       addReason('ADX above 20', 'bullish');
-    } else if (adx < 20) {
-      addReason('ADX below 20', 'bearish');
     }
   }
 
   if (!Number.isNaN(cci)) {
-    if (cci < -100) {
-      addReason('CCI below -100', 'bullish');
-    } else if (cci > 100) {
-      addReason('CCI above 100', 'bearish');
+    if (cci > 100) {
+      addReason('CCI bullish', 'bullish');
+    } else if (cci < -100) {
+      addReason('CCI bearish', 'bearish');
     }
   }
 
   if (!Number.isNaN(stochasticK)) {
     if (stochasticK > 80) {
-      addReason('Stochastic above 80', 'bearish');
+      addReason('Stochastic overbought (bullish continuation)', 'bullish');
     } else if (stochasticK < 20) {
-      addReason('Stochastic below 20', 'bullish');
+      addReason('Stochastic oversold (bearish continuation)', 'bearish');
     }
   }
 
@@ -83,6 +81,8 @@ function evaluateSignal({
   if (reasons.length === 0) {
     reasons.push('No trigger conditions met');
   }
+
+  reasons.sort();
 
   return {
     signal,
